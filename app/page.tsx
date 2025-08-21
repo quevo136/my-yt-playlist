@@ -1,103 +1,312 @@
-import Image from "next/image";
+// // app/page.tsx
+// import React from "react";
+// import styles from "./page.module.css";
+// import { useState, useEffect } from "react";
 
-export default function Home() {
+// // Types for YouTube API response
+// interface PlaylistItem {
+//   id: string;
+//   snippet?: {
+//     title?: string;
+//     description?: string;
+//     thumbnails?: {
+//       medium?: {
+//         url?: string;
+//         width?: number;
+//         height?: number;
+//       };
+//     };
+//     resourceId?: {
+//       videoId?: string;
+//     };
+//   };
+// }
+
+// interface PlaylistData {
+//   items?: PlaylistItem[];
+// }
+
+// const YOUTUBE_PLAYLIST_ITEM_API =
+//   "https://www.googleapis.com/youtube/v3/playlistItems";
+//   // "https://www.googleapis.com/youtube/v3/commentThreads"
+
+// // Fetch comments for a video from your backend
+// async function fetchComments(videoId: string): Promise<string[]> {
+//   try {
+//     const res = await fetch(`/api/comments?videoId=${videoId}`);
+//     if (!res.ok) return [];
+//     const data = await res.json();
+//     return data.comments || [];
+//   } catch {
+//     return [];
+//   }
+// }
+
+// // Post a comment to your backend
+// async function postComment(videoId: string, text: string): Promise<boolean> {
+//   try {
+//     const res = await fetch(`/api/comments`, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({ videoId, text }),
+//     });
+//     return res.ok;
+//   } catch {
+//     return false;
+//   }
+// }
+
+
+
+// // Fetch playlist data
+// async function getPlaylistData(): Promise<PlaylistData> {
+//   try {
+//     const res = await fetch(
+//       `${YOUTUBE_PLAYLIST_ITEM_API}?part=snippet&playlistId=RDJI4B8pj5G1M&maxResults=10&key=${process.env.YOUTUBE_APIKEY}`,
+//       { cache: "no-store" }
+//     );
+
+//     if (!res.ok) {
+//       console.error("YouTube API error:", res.statusText);
+//       return { items: [] };
+//     }
+
+//     const data = await res.json();
+//     return data;
+//   } catch (err) {
+//     console.error("Fetch failed:", err);
+//     return { items: [] };
+//   }
+// }
+
+// export default async function Page() {
+//   const data = await getPlaylistData();
+
+//   return (
+//     <div className="container mx-auto p-6">
+//       <h1 className="text-3xl font-bold mb-6 text-center">My YouTube Playlist</h1>
+
+//       {data.items?.length === 0 ? (
+//         <p className="text-center text-gray-500">No playlist items found.</p>
+//       ) : (
+//         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+//           {data.items.map((item) => {
+//             const snippet = item.snippet || {};
+//             const title = snippet.title || "No title";
+//             const description = snippet.description || "No description";
+//             const videoId = snippet.resourceId?.videoId || "";
+//             const thumbnail = snippet.thumbnails?.medium;
+
+//             return (
+//               <li key={item.id} className={styles.card}>
+//                 <a
+//                   href={`https://www.youtube.com/watch?v=${videoId}`}
+//                   target="_blank"
+//                   rel="noopener noreferrer"
+//                 >
+//                   {thumbnail?.url && (
+//                     <img
+//                       width={thumbnail.width}
+//                       height={thumbnail.height}
+//                       src={thumbnail.url}
+//                       alt={title}
+//                       className="mb-2 rounded"
+//                     />
+//                   )}
+//                   <h3 className="font-semibold text-lg">{title}</h3>
+//                   <textarea className="text-gray-600" placeholder="Comments">{}</textarea>
+
+//                 </a>
+//               </li>
+//             );
+//           })}
+//         </ul>
+//       )}
+//     </div>
+//   );
+// }
+
+
+
+// ...existing code...
+"use client";
+import React, { useState, useEffect } from "react";
+import styles from "./page.module.css";
+interface PlaylistItem {
+  id: string;
+  snippet?: {
+    title?: string;
+    description?: string;
+    thumbnails?: {
+      medium?: {
+        url?: string;
+        width?: number;
+        height?: number;
+      };
+    };
+    resourceId?: {
+      videoId?: string;
+    };
+  };
+}
+
+interface PlaylistData {
+  items?: PlaylistItem[];
+}
+
+const YOUTUBE_PLAYLIST_ITEM_API =
+  "https://www.googleapis.com/youtube/v3/playlistItems";
+  // "https://www.googleapis.com/youtube/v3/commentThreads"
+
+
+async function getPlaylistData(): Promise<PlaylistData> {
+  try {
+    const res = await fetch(
+      `${YOUTUBE_PLAYLIST_ITEM_API}?part=snippet&playlistId=RDJI4B8pj5G1M&maxResults=10&key=${process.env.YOUTUBE_APIKEY}`,
+      { cache: "no-store" }
+    );
+
+    if (!res.ok) {
+      console.error("YouTube API error:", res.statusText);
+      return { items: [] };
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error("Fetch failed:", err);
+    return { items: [] };
+  }
+}
+// ...existing PlaylistItem and PlaylistData interfaces...
+
+// Fetch comments for a video from your backend
+async function fetchComments(videoId: string): Promise<string[]> {
+  try {
+    const res = await fetch(`/api/comments?videoId=${videoId}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.comments || [];
+  } catch {
+    return [];
+  }
+}
+
+// Post a comment to your backend
+async function postComment(videoId: string, text: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ videoId, text }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+function PlaylistCard({ item }: { item: PlaylistItem }) {
+  const snippet = item.snippet || {};
+  const title = snippet.title || "No title";
+  const description = snippet.description || "No description";
+  const videoId = snippet.resourceId?.videoId || "";
+  const thumbnail = snippet.thumbnails?.medium;
+  const [comments, setComments] = useState<string[]>([]);
+  const [commentInput, setCommentInput] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (videoId) {
+      fetchComments(videoId).then(setComments);
+    }
+  }, [videoId]);
+
+  const handleCommentPost = async () => {
+    if (!commentInput.trim()) return;
+    setLoading(true);
+    const success = await postComment(videoId, commentInput);
+    setLoading(false);
+    if (success) {
+      setCommentInput("");
+      fetchComments(videoId).then(setComments);
+    } else {
+      alert("Failed to post comment. Make sure you are signed in.");
+    }
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+    <li key={item.id} className={styles.card}>
+      <a
+        href={`https://www.youtube.com/watch?v=${videoId}`}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {thumbnail?.url && (
+          <img
+            width={thumbnail.width}
+            height={thumbnail.height}
+            src={thumbnail.url}
+            alt={title}
+            className="mb-2 rounded"
+          />
+        )}
+        <h3 className="font-semibold text-lg">{title}</h3>
+      </a>
+      <div>
+        <textarea
+          className="w-full border rounded p-2 mt-2"
+          placeholder="Add a comment..."
+          value={commentInput}
+          onChange={(e) => setCommentInput(e.target.value)}
+          disabled={loading}
         />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        <button
+          className="bg-blue-500 text-white px-3 py-1 rounded mt-2"
+          onClick={handleCommentPost}
+          disabled={loading}
+        >
+          {loading ? "Posting..." : "Post Comment"}
+        </button>
+        <div className="mt-2">
+          <strong>Comments:</strong>
+          <ul className="list-disc pl-4">
+            {comments.map((cmt, idx) => (
+              <li key={idx}>{cmt}</li>
+            ))}
+          </ul>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+    </li>
+  );
+}
+
+export default async function Page() {
+  const data = await getPlaylistData();
+  // const [data, setData] = useState<PlaylistData>({ items: [] });
+  // const [loading, setLoading] = useState(true);
+
+  // useEffect(() => {
+  //   getPlaylistData().then((playlist) => {
+  //     setData(playlist);
+  //     setLoading(false);
+  //   });
+  // }, []);
+
+
+  return (
+    <div className="container mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6 text-center">My YouTube Playlist</h1>
+      {data.items?.length === 0 ? (
+        <p className="text-center text-gray-500">No playlist items found.</p>
+      ) : (
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {data.items.map((item) => (
+            <PlaylistCard key={item.id} item={item} />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
+// ...existing code...
