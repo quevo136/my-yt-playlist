@@ -196,7 +196,7 @@ export default function Page() {
         <input
           type="text"
           className="border rounded p-2 w-80"
-          placeholder="Enter YouTube Playlist ID"
+          placeholder="Enter YouTube Video name"
           value={playlistId}
           onChange={(e) => setPlaylistId(e.target.value)}
         />
@@ -219,4 +219,3 @@ export default function Page() {
     </div>
   );
 }
-// ...existing code...
