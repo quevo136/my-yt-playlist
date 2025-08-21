@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useEffect } from "react";
 import styles from "./page.module.css";
@@ -29,10 +28,10 @@ const YOUTUBE_PLAYLIST_ITEM_API =
   // "https://www.googleapis.com/youtube/v3/commentThreads"
 
 
-async function getPlaylistData(): Promise<PlaylistData> {
+async function getPlaylistData(playlistId: string): Promise<PlaylistData> {
   try {
     const res = await fetch(
-      `${YOUTUBE_PLAYLIST_ITEM_API}?part=snippet&playlistId=RDJI4B8pj5G1M&maxResults=10&key=${process.env.YOUTUBE_APIKEY}`,
+      `${YOUTUBE_PLAYLIST_ITEM_API}?part=snippet&playlistId=${playlistId}&maxResults=10&key=${process.env.YOUTUBE_APIKEY}`,
       { cache: "no-store" }
     );
 
@@ -152,23 +151,51 @@ function PlaylistCard({ item }: { item: PlaylistItem }) {
   );
 }
 
-export default async function Page() {
-    const data = await getPlaylistData();
+export default function Page() {
+  
+  // const data = await getPlaylistData();
+  const [playlistId, setPlaylistId] = useState("");
+  const [data, setData] = useState<PlaylistData>({ items: [] });
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+
+  const handleSearch = async () => {
+    if (!playlistId.trim()) return;
+    setLoading(true);
+    setSearched(true);
+    const playlist = await getPlaylistData(playlistId.trim());
+    setData(playlist);
+    setLoading(false);
+  };
 
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6 text-center">My YouTube Playlist</h1>
-      {data.items?.length === 0 ? (
+      <h1 className="text-3xl font-bold mb-6 text-center">YouTube Playlist Search</h1>
+      <div className="flex justify-center mb-6">
+        <input
+          type="text"
+          className="border rounded p-2 w-80"
+          placeholder="Enter YouTube Playlist ID"
+          value={playlistId}
+          onChange={(e) => setPlaylistId(e.target.value)}
+        />
+        <button
+          className="bg-blue-500 text-white px-4 py-2 rounded ml-2"
+          onClick={handleSearch}
+          disabled={loading}
+        >
+          {loading ? "Searching..." : "Search"}
+        </button>
+      </div>
+      {searched && !loading && data.items?.length === 0 && (
         <p className="text-center text-gray-500">No playlist items found.</p>
-      ) : (
-        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(data.items ?? []).map((item) => (
-            <PlaylistCard key={item.id} item={item} />
-          ))}
-        </ul>
       )}
+      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {(data.items ?? []).map((item) => (
+          <PlaylistCard key={item.id} item={item} />
+        ))}
+      </ul>
     </div>
   );
 }
-// ...existing code...
