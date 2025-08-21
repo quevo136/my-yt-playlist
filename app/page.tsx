@@ -28,10 +28,12 @@ const YOUTUBE_PLAYLIST_ITEM_API =
   // "https://www.googleapis.com/youtube/v3/commentThreads"
 
 
-async function getPlaylistData(playlistId: string): Promise<PlaylistData> {
+async function getPlaylistData(playlistId:string): Promise<PlaylistData> {
   try {
     const res = await fetch(
-      `${YOUTUBE_PLAYLIST_ITEM_API}?part=snippet&playlistId=${playlistId}&maxResults=10&key=${process.env.YOUTUBE_APIKEY}`,
+      `${YOUTUBE_PLAYLIST_ITEM_API}?part=snippet&maxResults=5&playlistId=PLBCF2DAC6FFB574DE&key=${process.env.YOUTUBE_APIKEY}`,
+      //?key=${process.env.YOUTUBE_APIKEY}&playlistId=${playlistId}&part=snippet&maxResults=10`,
+      //`${YOUTUBE_PLAYLIST_ITEM_API}?key=${process.env.YOUTUBE_APIKEY}&playlistId=${playlistId}&type=video&maxResults=10&part=snippet`,
       { cache: "no-store" }
     );
 
@@ -49,6 +51,21 @@ async function getPlaylistData(playlistId: string): Promise<PlaylistData> {
   }
 }
 // ...existing PlaylistItem and PlaylistData interfaces...
+
+interface SearchItem {
+  id: {
+    kind: string;
+    videoId?: string;
+    channelId?: string;
+  };
+  snippet?: {
+    title?: string;
+    description?: string;
+    thumbnails?: {
+      medium?: { url?: string; width?: number; height?: number };
+    };
+  };
+}
 
 // Fetch comments for a video from your backend
 async function fetchComments(videoId: string): Promise<string[]> {
@@ -77,11 +94,14 @@ async function postComment(videoId: string, text: string): Promise<boolean> {
 }
 
 function PlaylistCard({ item }: { item: PlaylistItem }) {
-  const snippet = item.snippet || {};
-  const title = snippet.title || "No title";
+  const snippet = item.snippet || {};  
   const description = snippet.description || "No description";
   const videoId = snippet.resourceId?.videoId || "";
-  const thumbnail = snippet.thumbnails?.medium;
+  const title = item.snippet?.title ?? "No title";
+  const thumbnail = item.snippet?.thumbnails?.medium;
+  // const title = snippet.title || "No title";
+  // const videoId = snippet.resourceId?.videoId || "";
+  // const thumbnail = snippet.thumbnails?.medium;
   const [comments, setComments] = useState<string[]>([]);
   const [commentInput, setCommentInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -199,3 +219,4 @@ export default function Page() {
     </div>
   );
 }
+// ...existing code...
