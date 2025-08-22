@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import styles from "./page.module.css";
+
 interface PlaylistItem {
   id: string;
   snippet?: {
@@ -22,9 +23,10 @@ interface PlaylistItem {
 interface PlaylistData {
   items?: PlaylistItem[];
 }
+
 const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_APIKEY;
 const YOUTUBE_PLAYLIST_ITEM_API =
-  'https://www.googleapis.com/youtube/v3/playlistItems';
+  "https://www.googleapis.com/youtube/v3/playlistItems";
 const YOUTUBE_SEARCH_API =
   "https://www.googleapis.com/youtube/v3/search";
 
@@ -49,20 +51,20 @@ async function searchPlaylistByName(query: string): Promise<string | null> {
   }
 }
 
-async function getPlaylistData(playlistId:string): Promise<PlaylistData> {
+async function getPlaylistData(playlistId: string): Promise<PlaylistData> {
   try {
     const res = await fetch(
-      `${YOUTUBE_PLAYLIST_ITEM_API}?part=snippet&maxResults=5&playlistId=${playlistId}&key=${apiKey}`,
+      `${YOUTUBE_PLAYLIST_ITEM_API}?part=snippet&maxResults=10&playlistId=${playlistId}&key=${apiKey}`,
       { cache: "no-store" }
     );
 
     if (!res.ok) {
-      console.error("YouTube API error:", res.statusText);
-      console.log(await res.text()); 
       return { items: [] };
     }
 
     const data = await res.json();
+
+    // ✅ filter out private/deleted
     const filtered = (data.items || []).filter(
       (item: PlaylistItem) =>
         item.snippet &&
@@ -71,84 +73,17 @@ async function getPlaylistData(playlistId:string): Promise<PlaylistData> {
         item.snippet.title.toLowerCase() !== "deleted video"
     );
 
-      return { items: filtered };
-    } catch {
-      return { items: [] };
-    }
-}
-
-interface SearchItem {
-  id: {
-    kind: string;
-    videoId?: string;
-    channelId?: string;
-  };
-  snippet?: {
-    title?: string;
-    description?: string;
-    thumbnails?: {
-      medium?: { url?: string; width?: number; height?: number };
-    };
-  };
-}
-
-// Fetch comments for a video from your backend
-async function fetchComments(videoId: string): Promise<string[]> {
-  try {
-    const res = await fetch(`/api/comments?videoId=${videoId}`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.comments || [];
+    return { items: filtered };
   } catch {
-    return [];
-  }
-}
-
-// Post a comment to your backend
-async function postComment(videoId: string, text: string): Promise<boolean> {
-  try {
-    const res = await fetch(`/api/comments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ videoId, text }),
-    });
-    return res.ok;
-  } catch {
-    return false;
+    return { items: [] };
   }
 }
 
 function PlaylistCard({ item }: { item: PlaylistItem }) {
-  const snippet = item.snippet || {};  
-  const description = snippet.description || "No description";
+  const snippet = item.snippet || {};
   const videoId = snippet.resourceId?.videoId || "";
-  const title = item.snippet?.title ?? "No title";
-  const thumbnail = item.snippet?.thumbnails?.medium;
-  // const title = snippet.title || "No title";
-  // const videoId = snippet.resourceId?.videoId || "";
-  // const thumbnail = snippet.thumbnails?.medium;
-  const [comments, setComments] = useState<string[]>([]);
-  const [commentInput, setCommentInput] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (videoId) {
-      fetchComments(videoId).then(setComments);
-    }
-  }, [videoId]);
-
-  const handleCommentPost = async () => {
-    if (!commentInput.trim()) return;
-    setLoading(true);
-    const success = await postComment(videoId, commentInput);
-    setLoading(false);
-    if (success) {
-      setCommentInput("");
-      fetchComments(videoId).then(setComments);
-    } else {
-      alert("Failed to post comment. Make sure you are signed in.");
-    }
-  };
+  const title = snippet.title ?? "No title";
+  const thumbnail = snippet.thumbnails?.medium;
 
   return (
     <li key={item.id} className={styles.card}>
@@ -168,62 +103,44 @@ function PlaylistCard({ item }: { item: PlaylistItem }) {
         )}
         <h3 className="font-semibold text-lg">{title}</h3>
       </a>
-      <div>
-        <textarea
-          className="w-full border rounded p-2 mt-2"
-          placeholder="Add a comment..."
-          value={commentInput}
-          onChange={(e) => setCommentInput(e.target.value)}
-          disabled={loading}
-        />
-        <button
-          className="bg-blue-500 text-white px-3 py-1 rounded mt-2"
-          onClick={handleCommentPost}
-          disabled={loading}
-        >
-          {loading ? "Posting..." : "Post Comment"}
-        </button>
-        <div className="mt-2">
-          <strong>Comments:</strong>
-          <ul className="list-disc pl-4">
-            {comments.map((cmt, idx) => (
-              <li key={idx}>{cmt}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
     </li>
   );
 }
 
 export default function Page() {
-  
-  // const data = await getPlaylistData();
-  const [playlistId, setPlaylistId] = useState("");
+  const [query, setQuery] = useState("");
   const [data, setData] = useState<PlaylistData>({ items: [] });
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
   const handleSearch = async () => {
-    if (!playlistId.trim()) return;
+    if (!query.trim()) return;
     setLoading(true);
     setSearched(true);
-    const playlist = await getPlaylistData(playlistId.trim());
-    setData(playlist);
+
+    const playlistId = await searchPlaylistByName(query.trim());
+    if (playlistId) {
+      const playlist = await getPlaylistData(playlistId);
+      setData(playlist);
+    } else {
+      setData({ items: [] });
+    }
+
     setLoading(false);
   };
 
-
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6 text-center">YouTube Playlist Search</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        YouTube Playlist Search by Name
+      </h1>
       <div className="flex justify-center mb-6">
         <input
           type="text"
           className="border rounded p-2 w-80"
-          placeholder="Enter YouTube Video"
-          value={playlistId}
-          onChange={(e) => setPlaylistId(e.target.value)}
+          placeholder="Enter Playlist Name"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
         />
         <button
           className="bg-blue-500 text-white px-4 py-2 rounded ml-2"
@@ -234,7 +151,9 @@ export default function Page() {
         </button>
       </div>
       {searched && !loading && data.items?.length === 0 && (
-        <p className="text-center text-gray-500">No playlist items found.</p>
+        <p className="text-center text-gray-500">
+          No public playlist items found.
+        </p>
       )}
       <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {(data.items ?? []).map((item) => (
@@ -244,5 +163,3 @@ export default function Page() {
     </div>
   );
 }
-
-
