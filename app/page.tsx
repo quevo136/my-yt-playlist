@@ -22,35 +22,38 @@ interface PlaylistItem {
 interface PlaylistData {
   items?: PlaylistItem[];
 }
-
+const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_APIKEY;
 const YOUTUBE_PLAYLIST_ITEM_API =
-  "https://www.googleapis.com/youtube/v3/playlistItems";
-  // "https://www.googleapis.com/youtube/v3/commentThreads"
+  'https://www.googleapis.com/youtube/v3/playlistItems';
 
 
 async function getPlaylistData(playlistId:string): Promise<PlaylistData> {
   try {
     const res = await fetch(
-      `${YOUTUBE_PLAYLIST_ITEM_API}?part=snippet&maxResults=5&playlistId=PLBCF2DAC6FFB574DE&key=${process.env.YOUTUBE_APIKEY}`,
-      //?key=${process.env.YOUTUBE_APIKEY}&playlistId=${playlistId}&part=snippet&maxResults=10`,
-      //`${YOUTUBE_PLAYLIST_ITEM_API}?key=${process.env.YOUTUBE_APIKEY}&playlistId=${playlistId}&type=video&maxResults=10&part=snippet`,
+      `${YOUTUBE_PLAYLIST_ITEM_API}?part=snippet&maxResults=5&playlistId=${playlistId}&key=${apiKey}`,
       { cache: "no-store" }
     );
 
     if (!res.ok) {
       console.error("YouTube API error:", res.statusText);
-      console.log(await res.text()); // See the error details
+      console.log(await res.text()); 
       return { items: [] };
     }
 
     const data = await res.json();
-    return data;
-  } catch (err) {
-    console.error("Fetch failed:", err);
-    return { items: [] };
-  }
+    const filtered = (data.items || []).filter(
+      (item: PlaylistItem) =>
+        item.snippet &&
+        item.snippet.title &&
+        item.snippet.title.toLowerCase() !== "private video" &&
+        item.snippet.title.toLowerCase() !== "deleted video"
+    );
+
+      return { items: filtered };
+    } catch {
+      return { items: [] };
+    }
 }
-// ...existing PlaylistItem and PlaylistData interfaces...
 
 interface SearchItem {
   id: {
@@ -196,7 +199,7 @@ export default function Page() {
         <input
           type="text"
           className="border rounded p-2 w-80"
-          placeholder="Enter YouTube Video name"
+          placeholder="Enter YouTube Video"
           value={playlistId}
           onChange={(e) => setPlaylistId(e.target.value)}
         />
@@ -219,3 +222,5 @@ export default function Page() {
     </div>
   );
 }
+
+
