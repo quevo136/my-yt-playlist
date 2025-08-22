@@ -25,7 +25,29 @@ interface PlaylistData {
 const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_APIKEY;
 const YOUTUBE_PLAYLIST_ITEM_API =
   'https://www.googleapis.com/youtube/v3/playlistItems';
+const YOUTUBE_SEARCH_API =
+  "https://www.googleapis.com/youtube/v3/search";
 
+async function searchPlaylistByName(query: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${YOUTUBE_SEARCH_API}?part=snippet&type=playlist&q=${encodeURIComponent(
+        query
+      )}&key=${apiKey}`,
+      { cache: "no-store" }
+    );
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    if (data.items && data.items.length > 0) {
+      return data.items[0].id.playlistId; // first matching playlist
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 async function getPlaylistData(playlistId:string): Promise<PlaylistData> {
   try {
